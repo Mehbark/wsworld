@@ -1,0 +1,23 @@
+{
+  "name": "wsworld",
+  "version": "1.0.0",
+  "description": "like my last thing but actually doing the thing i wanted to do",
+  "scripts": {
+    "test": "node clientSide/test.js",
+    "start": "node serverSide/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Mehbark/wsworld.git"
+  },
+  "author": "mehbark",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mehbark/wsworld/issues"
+  },
+  "homepage": "https://github.com/Mehbark/wsworld#readme",
+  "dependencies": {
+    "socket.io": "^4.2.0",
+    "ws": "^8.2.1"
+  }
+}
