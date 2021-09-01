@@ -2,12 +2,14 @@ const WebSocket = require("ws").WebSocket;
 
 class Agent {
   constructor(url) {
-    this.serverConnection = WebSocket(url);
+    this.ws = new WebSocket(url);
   }
   test(message) {
-    this.serverConnection.send(message);
+    this.ws.send(message);
   }
 }
 
 let test = new Agent("ws://localhost:8080");
-test.test("Hello, world!");
+test.ws.on("open", function open() {
+  test.ws.send("Hello, world!");
+});
