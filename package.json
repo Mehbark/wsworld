@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "like my last thing but actually doing the thing i wanted to do",
   "scripts": {
-    "test": "node clientSide/test.js",
+    "agentTest": "node clientSide/test.js",
     "start": "node serverSide/server.js"
   },
   "repository": {
