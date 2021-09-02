@@ -1,5 +1,4 @@
 const WebSocketServer = require("ws").Server;
-const { v4: uuidv4 } = require("uuid");
 const fs = require("fs");
 
 class WsWorldServer {
@@ -48,16 +47,28 @@ class WsWorldServer {
     this.saveObject(this.world, this.worldPath);
   }
 
+  agentResponse(ws, success, result) {
+    let responseObject = { result: result };
+    if (success) {
+      responseObject.success = true;
+    }
+    ws.send(JSON.stringify(responseObject));
+  }
+
   intentError(ws) {
-    ws.send("Failed to parse intent");
+    this.agentResponse(ws, false, "Failed to parse intent");
   }
 
   JSONError(ws) {
-    ws.send("Failed to parse JSON");
+    this.agentResponse(ws, false, "Failed to parse JSON");
   }
 
   invalidPropertiesError(ws, missingProperties) {
-    ws.send("Missing or invalid properties: " + missingProperties.join(", "));
+    this.agentResponse(
+      ws,
+      false,
+      "Missing or invalid properties: " + missingProperties.join(", ")
+    );
   }
 
   jsError(ws, error) {
@@ -93,16 +104,18 @@ class WsWorldServer {
   }
 
   signUp(ws, username, password, initialChar = "@", initialColor = "black") {
-    let uuid = uuidv4();
-    this.agents[uuid] = {
-      username: username,
+    if (username in this.agents) {
+      this.agentResponse(ws, false, "Username already taken");
+      return;
+    }
+    this.agents[username] = {
       password: password,
       char: initialChar,
       color: initialColor,
     };
     this.agents.count++;
     this.saveAgents();
-    ws.send(uuid);
+    this.agentResponse(ws, true, "Account successfully created.");
   }
 }
 
