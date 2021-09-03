@@ -131,7 +131,8 @@ class WsWorldServer {
             message,
             ["username", "password"],
             ["string", "string"],
-            ["initialChar"]
+            ["initialChar", "initialColor"],
+            ["string", "string"]
           )
         ) {
           this.signUp(
@@ -168,8 +169,17 @@ class WsWorldServer {
 
   signIn(ws, username, password) {
     if (!(username in this.agents)) {
+      this.agentResponse(ws, false, "Agent with that username not found");
+    } else if (this.agents[username][password] === password) {
+      this.agentResponse(ws, false, "Incorrect password");
+    } else {
+      ws.agent = this.agents[username];
+      ws.agentConnected = true;
+      this.agentResponse(ws, true, "Successfully signed in");
     }
   }
+
+  // setAgentChar(ws, agent)
 }
 
 exports.WsWorldServer = WsWorldServer;
