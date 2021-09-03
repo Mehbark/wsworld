@@ -28,6 +28,11 @@ class WsWorldServer {
       ws.on("message", function incoming(message) {
         server.handleRequest(message, ws);
       });
+
+      ws.on("close", function close() {
+        this.agent.connected = false;
+        server.saveAgents();
+      });
     });
   }
 
@@ -196,12 +201,16 @@ class WsWorldServer {
   signIn(ws, username, password) {
     if (!(username in this.agents)) {
       this.agentResponse(ws, false, "Agent with that username not found");
-    } else if (this.agents[username][password] === password) {
+    } else if (this.agents.connected) {
+      this.clientActionFailure(ws, "Agent already connected");
+    } else if (this.agents[username][password] !== password) {
       this.clientActionFailure(ws, "Incorrect password");
     } else {
       ws.agent = this.agents[username];
       ws.agentConnected = true;
+      ws.agent.connected = true;
       this.clientActionSuccess(ws, "Successfully signed in");
+      this.saveAgents();
     }
   }
 }
