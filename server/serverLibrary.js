@@ -48,25 +48,36 @@ class WsWorldServer {
   }
 
   agentResponse(ws, success, result) {
-    let responseObject = { result: result };
-    responseObject.success = success;
+    let responseObject = { success: success, result: result };
     ws.send(JSON.stringify(responseObject));
   }
 
+  clientActionFailure(ws, result) {
+    this.agentResponse(ws, false, result);
+  }
+
+  clientActionSuccess(ws, result) {
+    this.agentResponse(ws, true, result);
+  }
+
   intentError(ws) {
-    this.agentResponse(ws, false, "Failed to parse intent");
+    this.clientActionFailure(ws, "Failed to parse intent");
   }
 
   JSONError(ws) {
-    this.agentResponse(ws, false, "Failed to parse JSON");
+    this.clientActionFailure(ws, "Failed to parse JSON");
   }
 
-  invalidPropertiesError(ws, missingOrInvalidProperties) {
-    this.agentResponse(
+  propertiesError(ws, missingOrInvalidProperties) {
+    this.clientActionFailure(
       ws,
       false,
-      "Missing or invalid properties:: " + missingOrInvalidProperties.join(", ")
+      `Missing or invalid properties:: ${missingOrInvalidProperties.join(", ")}`
     );
+  }
+
+  propertyError(ws, property, shouldBe) {
+    this.clientActionFailure(ws, `"${property}" should be ${shouldBe}`);
   }
 
   jsError(ws, error) {
@@ -154,9 +165,14 @@ class WsWorldServer {
 
   signUp(ws, username, password, initialChar = "@", initialColor = "black") {
     if (username in this.agents) {
-      this.agentResponse(ws, false, "Username already taken");
+      this.clientActionFailure(ws, "Username already taken");
       return;
     }
+    if (initialChar.length !== 1) {
+      this.invalidProperty(ws, "initialChar", "a single character");
+      return;
+    }
+
     this.agents[username] = {
       password: password,
       char: initialChar,
@@ -178,8 +194,6 @@ class WsWorldServer {
       this.agentResponse(ws, true, "Successfully signed in");
     }
   }
-
-  // setAgentChar(ws, agent)
 }
 
 exports.WsWorldServer = WsWorldServer;
