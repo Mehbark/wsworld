@@ -49,9 +49,7 @@ class WsWorldServer {
 
   agentResponse(ws, success, result) {
     let responseObject = { result: result };
-    if (success) {
-      responseObject.success = true;
-    }
+    responseObject.success = success;
     ws.send(JSON.stringify(responseObject));
   }
 
@@ -63,16 +61,39 @@ class WsWorldServer {
     this.agentResponse(ws, false, "Failed to parse JSON");
   }
 
-  invalidPropertiesError(ws, missingProperties) {
+  invalidPropertiesError(ws, missingOrInvalidProperties) {
     this.agentResponse(
       ws,
       false,
-      "Missing or invalid properties: " + missingProperties.join(", ")
+      "Missing or invalid properties:: " + missingOrInvalidProperties.join(", ")
     );
   }
 
   jsError(ws, error) {
     console.error(error);
+  }
+
+  checkProperties(ws, message, neededProperties, expectedTypes) {
+    let missingOrInvalidProperties = [];
+
+    for (let i = 0; i < neededProperties.length; i++) {
+      let property = neededProperties[i];
+      let expectedType = expectedTypes[i];
+
+      if (
+        message[property] === undefined ||
+        typeof message[property] !== expectedType
+      ) {
+        missingOrInvalidProperties.push(`${property}: ${expectedType}`);
+      }
+    }
+
+    if (missingOrInvalidProperties.length > 0) {
+      this.invalidPropertiesError(ws, missingOrInvalidProperties);
+      return false;
+    } else {
+      return true;
+    }
   }
 
   handleRequest(message, ws) {
@@ -84,22 +105,27 @@ class WsWorldServer {
     switch (message.intent) {
       case "sign_up":
         if (
-          typeof message.username !== "string" ||
-          typeof message.password !== "string"
+          this.checkProperties(
+            ws,
+            message,
+            ["username", "password"],
+            ["string", "string"]
+          )
         ) {
-          this.invalidPropertiesError(ws, ["username", "password"]);
-          break;
+          this.signUp(
+            ws,
+            message.username,
+            message.password,
+            message.initialChar,
+            message.initialColor
+          );
         }
-        this.signUp(
-          ws,
-          message.username,
-          message.password,
-          message.initialChar,
-          message.initialColor
-        );
+        break;
+      case "sign_in":
         break;
       default:
         this.intentError(ws);
+        break;
     }
   }
 
@@ -116,6 +142,11 @@ class WsWorldServer {
     this.agents.count++;
     this.saveAgents();
     this.agentResponse(ws, true, "Account successfully created.");
+  }
+
+  signIn(ws, username, password) {
+    if (!(username in this.agents)) {
+    }
   }
 }
 
