@@ -156,6 +156,16 @@ class WsWorldServer {
         }
         break;
       case "sign_in":
+        if (
+          this.checkProperties(
+            ws,
+            message,
+            ["username", "password"],
+            ["string", "string"]
+          )
+        ) {
+          this.signIn(ws, message.username, message.password);
+        }
         break;
       default:
         this.intentError(ws);
