@@ -190,18 +190,18 @@ class WsWorldServer {
     };
     this.agents.count++;
     this.saveAgents();
-    this.agentResponse(ws, true, "Account successfully created.");
+    this.clientActionSuccess(ws, "Account successfully created.");
   }
 
   signIn(ws, username, password) {
     if (!(username in this.agents)) {
       this.agentResponse(ws, false, "Agent with that username not found");
     } else if (this.agents[username][password] === password) {
-      this.agentResponse(ws, false, "Incorrect password");
+      this.clientActionFailure(ws, "Incorrect password");
     } else {
       ws.agent = this.agents[username];
       ws.agentConnected = true;
-      this.agentResponse(ws, true, "Successfully signed in");
+      this.clientActionSuccess(ws, "Successfully signed in");
     }
   }
 }
