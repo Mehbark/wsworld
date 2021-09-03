@@ -138,7 +138,16 @@ class WsWorldServer {
       message = JSON.parse(message);
     } catch (err) {
       this.JSONError(ws);
+      return;
     }
+    if (ws.agentConnected) {
+      agentInteraction(message, ws);
+    } else {
+      this.signInOrSignUp(message, ws);
+    }
+    //TODO: spectate mode
+  }
+  signInOrSignUp(message, ws) {
     switch (message.intent) {
       case "sign_up":
         if (
@@ -196,6 +205,7 @@ class WsWorldServer {
     this.agents.count++;
     this.saveAgents();
     this.clientActionSuccess(ws, "Account successfully created.");
+    this.signIn(ws, username, password);
   }
 
   signIn(ws, username, password) {
