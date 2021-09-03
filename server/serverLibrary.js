@@ -73,7 +73,14 @@ class WsWorldServer {
     console.error(error);
   }
 
-  checkProperties(ws, message, neededProperties, expectedTypes) {
+  checkProperties(
+    ws,
+    message,
+    neededProperties,
+    expectedTypes,
+    optionalProperties,
+    optionalExpectedTypes
+  ) {
     let missingOrInvalidProperties = [];
 
     for (let i = 0; i < neededProperties.length; i++) {
@@ -85,6 +92,20 @@ class WsWorldServer {
         typeof message[property] !== expectedType
       ) {
         missingOrInvalidProperties.push(`${property}: ${expectedType}`);
+      }
+    }
+
+    if (optionalProperties) {
+      for (let i = 0; i < optionalProperties.length; i++) {
+        let property = neededProperties[i];
+        let expectedType = optionalExpectedTypes[i];
+
+        if (
+          message[property] !== undefined &&
+          typeof message[property] !== expectedType
+        ) {
+          missingOrInvalidProperties.push(`${property}: ${expectedType}`);
+        }
       }
     }
 
@@ -109,7 +130,8 @@ class WsWorldServer {
             ws,
             message,
             ["username", "password"],
-            ["string", "string"]
+            ["string", "string"],
+            ["initialChar"]
           )
         ) {
           this.signUp(
