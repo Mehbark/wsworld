@@ -3,26 +3,39 @@ const fs = require("fs");
 
 class WsWorldServer {
   constructor(
-    port = 8080,
-    worldPath = "privateData/world.json",
-    agentsPath = "privateData/agents.json"
+    options = {
+      port: 8080,
+      worldPath: "privateData/world.json",
+      agentsPath: "privateData/agents.json",
+    }
   ) {
+    this.defaultOptions = {
+      port: 8080,
+      worldPath: "privateData/world.json",
+      agentsPath: "privateData/agents.json",
+    };
+    this.options = options;
+    Object.keys(this.defaultOptions).forEach((key) => {
+      this.options[key] = this.default(key);
+    });
+    Object.keys(this.options).forEach((key) => {
+      this[key] = this.options[key];
+    });
+
     const server = this;
-    this.wss = new WebSocketServer({ port: port });
+    this.wss = new WebSocketServer({ port: this.options.port });
     try {
-      const world = fs.readFileSync(worldPath, "utf8");
+      const world = fs.readFileSync(this.worldPath, "utf8");
       server.world = JSON.parse(world);
     } catch (err) {
       throw err;
     }
     try {
-      const agents = fs.readFileSync(agentsPath, "utf8");
+      const agents = fs.readFileSync(this.agentsPath, "utf8");
       server.agents = JSON.parse(agents);
     } catch (err) {
       throw err;
     }
-    this.worldPath = worldPath;
-    this.agentsPath = agentsPath;
 
     this.wss.on("connection", function connection(ws) {
       ws.on("message", function incoming(message) {
@@ -34,6 +47,13 @@ class WsWorldServer {
         server.saveAgents();
       });
     });
+  }
+
+  default(property) {
+    if (this.options[property] !== undefined) {
+      return this.options[property];
+    }
+    return this.defaultOptions[property];
   }
 
   saveObject(object, path) {
