@@ -9,6 +9,7 @@ class WsWorldServer {
   ) {
     const server = this;
     this.wss = new WebSocketServer({ port: port });
+
     try {
       const world = fs.readFileSync(worldPath, "utf8");
       server.world = JSON.parse(world);
@@ -30,8 +31,10 @@ class WsWorldServer {
       });
 
       ws.on("close", function close() {
-        this.agent.connected = false;
-        server.saveAgents();
+        if (ws.agent) {
+          ws.agent.connected = false;
+          server.saveAgents();
+        }
       });
     });
   }
@@ -50,6 +53,11 @@ class WsWorldServer {
 
   saveWorld() {
     this.saveObject(this.world, this.worldPath);
+    for (let ws of this.wss.clients) {
+      if (ws.spectator) {
+        ws.send(JSON.stringify(this.world));
+      }
+    }
   }
 
   agentResponse(ws, success, result) {
@@ -145,7 +153,6 @@ class WsWorldServer {
     } else {
       this.signInOrSignUp(message, ws);
     }
-    //TODO: spectate mode
   }
   signInOrSignUp(message, ws) {
     switch (message.intent) {
@@ -180,6 +187,10 @@ class WsWorldServer {
         ) {
           this.signIn(ws, message.username, message.password);
         }
+        break;
+      case "spectate":
+        ws.spectator = true;
+        ws.send(JSON.stringify(this.world));
         break;
       default:
         this.intentError(ws);
