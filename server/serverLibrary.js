@@ -366,7 +366,12 @@ class WsWorldServer {
       let newPos = this.getWorldPosition(x, y);
       let oldPos = this.getWorldPosition(agent.x, agent.y);
       oldPos.agent = false;
-      newPos.agent = { username: agent.username };
+      newPos.agent = {
+        username: agent.username,
+        char: agent.char,
+        color: agent.color,
+        connected: agent.connected,
+      };
 
       agent.x = x;
       agent.y = y;
