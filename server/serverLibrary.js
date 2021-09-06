@@ -98,6 +98,11 @@ class WsWorldServer {
 
   saveWorld() {
     this.saveObject(this.world, this.worldPath);
+    for (let ws of this.wss.clients) {
+      if (ws.spectator) {
+        ws.send(JSON.stringify(this.world));
+      }
+    }
   }
 
   agentResponse(ws, success, result) {
@@ -229,6 +234,10 @@ class WsWorldServer {
         ) {
           this.signIn(ws, message.username, message.password);
         }
+        break;
+      case "spectate":
+        ws.spectator = true;
+        ws.send(JSON.stringify(this.world));
         break;
       default:
         this.intentError(ws);
