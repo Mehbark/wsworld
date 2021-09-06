@@ -16,8 +16,8 @@ class WsWorldServer {
       port: 8080,
       worldPath: "privateData/world.json",
       agentsPath: "privateData/agents.json",
-      worldWidth: 200,
-      worldHeight: 200,
+      worldWidth: 1000,
+      worldHeight: 1000,
       defaultBgColor: "white",
       defaultFgColor: "black",
     }
@@ -26,8 +26,8 @@ class WsWorldServer {
       port: 8080,
       worldPath: "privateData/world.json",
       agentsPath: "privateData/agents.json",
-      worldWidth: 200,
-      worldHeight: 200,
+      worldWidth: 1000,
+      worldHeight: 1000,
       defaultBgColor: "white",
       defaultFgColor: "black",
     };
