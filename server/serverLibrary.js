@@ -16,8 +16,8 @@ class WsWorldServer {
       port: 8080,
       worldPath: "privateData/world.json",
       agentsPath: "privateData/agents.json",
-      worldWidth: 1000,
-      worldHeight: 1000,
+      worldWidth: 238,
+      worldHeight: 70,
       defaultBgColor: "white",
       defaultFgColor: "black",
     }
@@ -26,8 +26,8 @@ class WsWorldServer {
       port: 8080,
       worldPath: "privateData/world.json",
       agentsPath: "privateData/agents.json",
-      worldWidth: 1000,
-      worldHeight: 1000,
+      worldWidth: 238,
+      worldHeight: 70,
       defaultBgColor: "white",
       defaultFgColor: "black",
     };
@@ -66,10 +66,12 @@ class WsWorldServer {
       });
 
       ws.on("close", function close() {
-        this.agent.connected = false;
-        server.saveAgents();
-        server.getWorldPosition(agent.x, agent.y).connected = false;
-        server.saveWorld();
+        if (ws.agent) {
+          this.agent.connected = false;
+          server.saveAgents();
+          server.getWorldPosition(agent.x, agent.y).connected = false;
+          server.saveWorld();
+        }
       });
     });
   }
