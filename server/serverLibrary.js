@@ -53,6 +53,12 @@ class WsWorldServer {
     } catch (err) {
       throw err;
     }
+    Object.keys(this.agents).forEach((agent) => {
+      if (this.agents[agent].connected) {
+        this.agents[agent].connected = false;
+      }
+    });
+    this.saveAgents();
 
     this.wss.on("connection", function connection(ws) {
       ws.on("message", function incoming(message) {
@@ -76,6 +82,9 @@ class WsWorldServer {
   }
 
   saveObject(object, path) {
+    if (JSON.stringify(object) === "") {
+      return;
+    }
     fs.writeFile(path, JSON.stringify(object), (err) => {
       if (err) {
         throw err;
@@ -278,7 +287,7 @@ class WsWorldServer {
   signIn(ws, username, password) {
     if (!(username in this.agents)) {
       this.agentResponse(ws, false, "Agent with that username not found");
-    } else if (this.agents.connected) {
+    } else if (this.agents[username].connected) {
       this.clientActionFailure(ws, "Agent already connected");
     } else if (this.agents[username].password !== password) {
       this.clientActionFailure(ws, "Incorrect password");
@@ -286,8 +295,10 @@ class WsWorldServer {
       ws.agent = this.agents[username];
       ws.agentConnected = true;
       ws.agent.connected = true;
-      this.clientActionSuccess(ws, "Successfully signed in");
       this.saveAgents();
+      this.moveAgent(ws, ws.agent.x, ws.agent.y, ws.agent);
+      this.saveWorld();
+      this.clientActionSuccess(ws, "Successfully signed in");
     }
   }
 
@@ -323,8 +334,20 @@ class WsWorldServer {
                 "direction",
                 "either up, down, left, or right"
               );
+              break;
           }
         }
+        break;
+      case "paint":
+        if (this.checkProperties(ws, message, ["color"], ["string"])) {
+          this.paint(ws, ws.agent, message.color);
+        }
+        break;
+      case "change_color":
+        if (this.checkProperties(ws, message, ["color"], ["string"])) {
+          this.changeAgentColor(ws, ws.agent, message.color);
+        }
+        break;
     }
   }
 
@@ -395,6 +418,32 @@ class WsWorldServer {
       return;
     }
     this.clientActionFailure(ws, "Cannot move there");
+  }
+
+  paint(ws, agent, color) {
+    if (color.length > 20) {
+      this.propertyError(ws, "color", "20 or less characters");
+      return;
+    }
+    let toBePainted = this.getWorldPosition(agent.x, agent.y);
+    toBePainted.color = color;
+    this.saveWorld();
+    this.clientActionSuccess(ws, toBePainted);
+  }
+  changeAgentColor(ws, agent, color) {
+    if (color.length > 20) {
+      this.propertyError(ws, "color", "20 or less characters");
+      return;
+    }
+    try {
+      let toBeChanged = this.getWorldPosition(agent.x, agent.y);
+      toBeChanged.agent.color = color;
+      agent.color = color;
+    } catch (err) {
+      console.error(err);
+    }
+    this.saveAgents();
+    this.clientActionSuccess(ws, ws.agent);
   }
 }
 
