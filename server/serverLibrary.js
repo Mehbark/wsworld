@@ -62,6 +62,8 @@ class WsWorldServer {
       ws.on("close", function close() {
         this.agent.connected = false;
         server.saveAgents();
+        server.getWorldPosition(agent.x, agent.y).connected = false;
+        server.saveWorld();
       });
     });
   }
@@ -232,6 +234,15 @@ class WsWorldServer {
     initialChar = "@",
     initialColor = this.defaultFgColor
   ) {
+    if (username.length > 20) {
+      this.invalidProperty(ws, "username", "20 or less characters");
+      return;
+    }
+    if (password.length > 50) {
+      this.invalidProperty(ws, "password", "50 or less characters");
+      return;
+      //Very optimistic of me to think this will be a problem but
+    }
     if (username in this.agents) {
       this.clientActionFailure(ws, "Username already taken");
       return;
@@ -239,6 +250,9 @@ class WsWorldServer {
     if (initialChar.length !== 1) {
       this.invalidProperty(ws, "initialChar", "a single character");
       return;
+    }
+    if (initialColor.length > 20) {
+      this.invalidProperty(ws, "initialColor", "20 or less characters");
     }
 
     var agentX = randInt(this.worldWidth);
