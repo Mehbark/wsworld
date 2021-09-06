@@ -1,18 +1,35 @@
 const WebSocketServer = require("ws").Server;
 const fs = require("fs");
 
+function randInt(min, max) {
+  if (!max) {
+    max = min;
+    min = 0;
+  }
+
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 class WsWorldServer {
   constructor(
     options = {
       port: 8080,
       worldPath: "privateData/world.json",
       agentsPath: "privateData/agents.json",
+      worldWidth: 200,
+      worldHeight: 200,
+      defaultBgColor: "white",
+      defaultFgColor: "black",
     }
   ) {
     this.defaultOptions = {
       port: 8080,
       worldPath: "privateData/world.json",
       agentsPath: "privateData/agents.json",
+      worldWidth: 200,
+      worldHeight: 200,
+      defaultBgColor: "white",
+      defaultFgColor: "black",
     };
     this.options = options;
     Object.keys(this.defaultOptions).forEach((key) => {
@@ -161,12 +178,26 @@ class WsWorldServer {
       return;
     }
     if (ws.agentConnected) {
-      agentInteraction(message, ws);
+      this.agentInteraction(message, ws);
     } else {
       this.signInOrSignUp(message, ws);
     }
     //TODO: spectate mode
   }
+
+  agentInteraction(message, ws) {
+    console.log(message);
+    switch (message.intent) {
+      case "get_pos":
+        if (
+          this.checkProperties(ws, message, ["x", "y"], ["number", "number"])
+        ) {
+          this.agentGetWorldPos(ws, message.x, message.y);
+        }
+        break;
+    }
+  }
+
   signInOrSignUp(message, ws) {
     switch (message.intent) {
       case "sign_up":
@@ -207,7 +238,13 @@ class WsWorldServer {
     }
   }
 
-  signUp(ws, username, password, initialChar = "@", initialColor = "black") {
+  signUp(
+    ws,
+    username,
+    password,
+    initialChar = "@",
+    initialColor = this.defaultFgColor
+  ) {
     if (username in this.agents) {
       this.clientActionFailure(ws, "Username already taken");
       return;
@@ -217,10 +254,18 @@ class WsWorldServer {
       return;
     }
 
+    var agentX = randInt(this.worldWidth);
+    var agentY = randInt(this.worldHieght);
+    while (!this.positionEmpty(agentX, agentY)) {
+      agentX = randInt(this.worldWidth);
+      agentY = randInt(this.worldHieght);
+    }
     this.agents[username] = {
       password: password,
       char: initialChar,
       color: initialColor,
+      x: agentX,
+      y: agentY,
     };
     this.agents.count++;
     this.saveAgents();
@@ -233,7 +278,7 @@ class WsWorldServer {
       this.agentResponse(ws, false, "Agent with that username not found");
     } else if (this.agents.connected) {
       this.clientActionFailure(ws, "Agent already connected");
-    } else if (this.agents[username][password] !== password) {
+    } else if (this.agents[username].password !== password) {
       this.clientActionFailure(ws, "Incorrect password");
     } else {
       ws.agent = this.agents[username];
@@ -242,6 +287,54 @@ class WsWorldServer {
       this.clientActionSuccess(ws, "Successfully signed in");
       this.saveAgents();
     }
+  }
+
+  // WORLD STUFF //
+  getWorldPosition(x, y) {
+    if (0 < x >= this.worldWidth || 0 < y >= this.worldHeight) {
+      return false;
+    }
+    if (this.world[x] === undefined) {
+      let newColumn = {};
+      newColumn[y] = { x: x, y: y, agent: false, color: this.defaultBgColor };
+      this.world[x] = newColumn;
+      this.saveWorld();
+      return this.world[x][y];
+    }
+    if (this.world[x][y] === undefined) {
+      this.world[x][y] = {
+        x: x,
+        y: y,
+        agent: false,
+        color: this.defaultBgColor,
+      };
+      this.saveWorld();
+      return this.world[x][y];
+    }
+    return this.world[x][y];
+  }
+
+  agentGetWorldPos(ws, x, y) {
+    let pos = this.getWorldPosition(x, y);
+    if (pos) {
+      ws.clientActionSuccess(ws, pos);
+      return;
+    }
+    this.clientActionFailure(ws, "Out of bounds");
+  }
+
+  positionEmpty(x, y) {
+    if (0 < x >= this.worldWidth || 0 < y >= this.worldHeight) {
+      return false;
+    }
+    if (this.world[x] === undefined) {
+      return true;
+    }
+    if (this.world[x][y] === undefined || this.world[x][y].agent === false) {
+      return true;
+    }
+    //idc about whatever fancy stuff you could easily do, this is easy to parse
+    //there was a spelling mistake for a minute that was an actual mistake sorry
   }
 }
 
