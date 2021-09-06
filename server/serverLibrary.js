@@ -185,19 +185,6 @@ class WsWorldServer {
     //TODO: spectate mode
   }
 
-  agentInteraction(message, ws) {
-    console.log(message);
-    switch (message.intent) {
-      case "get_pos":
-        if (
-          this.checkProperties(ws, message, ["x", "y"], ["number", "number"])
-        ) {
-          this.agentGetWorldPos(ws, message.x, message.y);
-        }
-        break;
-    }
-  }
-
   signInOrSignUp(message, ws) {
     switch (message.intent) {
       case "sign_up":
@@ -261,6 +248,7 @@ class WsWorldServer {
       agentY = randInt(this.worldHieght);
     }
     this.agents[username] = {
+      username: username,
       password: password,
       char: initialChar,
       color: initialColor,
@@ -290,8 +278,44 @@ class WsWorldServer {
   }
 
   // WORLD STUFF //
+  agentInteraction(message, ws) {
+    console.log(`${ws.agent.username} requests ${message.intent}`);
+    switch (message.intent) {
+      case "get_pos":
+        if (
+          this.checkProperties(ws, message, ["x", "y"], ["number", "number"])
+        ) {
+          this.agentGetWorldPos(ws, message.x, message.y);
+        }
+        break;
+      case "move":
+        if (this.checkProperties(ws, message, ["direction"], ["string"])) {
+          switch (message.direction) {
+            case "up":
+              this.moveAgent(ws, ws.agent.x, ws.agent.y - 1, ws.agent);
+              break;
+            case "down":
+              this.moveAgent(ws, ws.agent.x, ws.agent.y + 1, ws.agent);
+              break;
+            case "left":
+              this.moveAgent(ws, ws.agent.x - 1, ws.agent.y, ws.agent);
+              break;
+            case "right":
+              this.moveAgent(ws, ws.agent.x + 1, ws.agent.y, ws.agent);
+              break;
+            default:
+              ws.propertyError(
+                ws,
+                "direction",
+                "either up, down, left, or right"
+              );
+          }
+        }
+    }
+  }
+
   getWorldPosition(x, y) {
-    if (0 < x >= this.worldWidth || 0 < y >= this.worldHeight) {
+    if (x >= this.worldWidth || x < 0 || y >= this.worldHeight || y < 0) {
       return false;
     }
     if (this.world[x] === undefined) {
@@ -317,7 +341,7 @@ class WsWorldServer {
   agentGetWorldPos(ws, x, y) {
     let pos = this.getWorldPosition(x, y);
     if (pos) {
-      ws.clientActionSuccess(ws, pos);
+      this.clientActionSuccess(ws, pos);
       return;
     }
     this.clientActionFailure(ws, "Out of bounds");
@@ -335,6 +359,23 @@ class WsWorldServer {
     }
     //idc about whatever fancy stuff you could easily do, this is easy to parse
     //there was a spelling mistake for a minute that was an actual mistake sorry
+  }
+
+  moveAgent(ws, x, y, agent) {
+    if (this.positionEmpty(x, y)) {
+      let newPos = this.getWorldPosition(x, y);
+      let oldPos = this.getWorldPosition(agent.x, agent.y);
+      oldPos.agent = false;
+      newPos.agent = { username: agent.username };
+
+      agent.x = x;
+      agent.y = y;
+      this.saveAgents();
+      this.saveWorld();
+      this.clientActionSuccess(ws, this.getWorldPosition(x, y));
+      return;
+    }
+    this.clientActionFailure(ws, "Cannot move there");
   }
 }
 
